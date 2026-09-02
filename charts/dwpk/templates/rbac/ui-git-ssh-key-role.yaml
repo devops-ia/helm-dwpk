@@ -1,0 +1,50 @@
+{{- if or (not (hasKey .Values.ui "enabled")) (.Values.ui.enabled) }}
+{{/*
+Namespaced and name-scoped on purpose, the same resourceNames idiom
+templates/rbac/ui-role.yaml already uses for serviceaccounts/token
+(resourceNames: [session, session-readonly]): this grant is "read this one
+Secret", not "read secrets" - the UI's other secret-facing Roles
+(ui-tokens-role, ui-local-auth-role) are deliberately not widened to cover
+this, since they scope to a namespace, not a name, and a git-ssh encryption
+key reachable by every Secret a namespace-scoped grant happens to cover is
+exactly the exposure this whole feature exists to avoid.
+*/}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "dwpk.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  name: {{ include "dwpk.resourceName" (dict "suffix" "ui-git-ssh-key-role" "context" $) }}
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups:
+  - ""
+  resourceNames:
+  - dwpk-git-ssh-encryption-key
+  resources:
+  - secrets
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "dwpk.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  name: {{ include "dwpk.resourceName" (dict "suffix" "ui-git-ssh-key-rolebinding" "context" $) }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "dwpk.resourceName" (dict "suffix" "ui-git-ssh-key-role" "context" $) }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "dwpk.uiServiceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}

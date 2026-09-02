@@ -1,0 +1,73 @@
+name: Check new releases
+
+# The chart's appVersion follows the dwpk images. Nothing in this repository
+# can notice a new one, so this asks the registry daily and opens a pull
+# request when the answer changes.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *' # every day
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-and-update-dwpk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Get current release
+        id: current_release
+        run: |
+          current_release=$(grep appVersion charts/dwpk/Chart.yaml | awk '{ print $2 }' | tr -d '"')
+          echo "current_release=$current_release" >> $GITHUB_OUTPUT
+
+      - name: Install updatecli
+        uses: updatecli/updatecli-action@41b9c8d707830a9daebaeaa84c1b62d60b779564 # v3.6.0
+
+      - name: Update appVersion
+        run: |
+          updatecli apply --config .github/updatecli/helm-appversion.yaml --commit=false
+
+      - name: Get latest release
+        id: latest_release
+        run: |
+          latest_release=$(grep appVersion charts/dwpk/Chart.yaml | awk '{ print $2 }' | tr -d '"')
+          echo "latest_release=$latest_release" >> $GITHUB_OUTPUT
+
+      - name: Check if release changed
+        id: check_changes
+        run: |
+          if [ "${{ steps.latest_release.outputs.latest_release }}" != "${{ steps.current_release.outputs.current_release }}" ]; then
+            echo "release_changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update README.md Helm Chart
+        if: steps.check_changes.outputs.release_changed == 'true'
+        uses: losisin/helm-docs-github-action@3a4528e97c49a5e83de6b78c50c61c8ee5c9f944 # v2.0.0
+        with:
+          chart-search-root: charts/dwpk
+
+      - name: Create PR with changes
+        if: steps.check_changes.outputs.release_changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.PAT_GITHUB }}
+          commit-message: "fix: update dwpk version to ${{ steps.latest_release.outputs.latest_release }}"
+          signoff: false
+          branch: fix/upgrade-dwpk-appversion-${{ steps.latest_release.outputs.latest_release }}
+          delete-branch: true
+          title: 'fix: [dwpk] new release: ${{ steps.latest_release.outputs.latest_release }}'
+          body: |
+            dwpk version:
+            - :information_source: Current: `${{ steps.current_release.outputs.current_release }}`
+            - :up: Upgrade: `${{ steps.latest_release.outputs.latest_release }}`
+
+            Release notes: https://github.com/devops-ia/dwpk/releases/tag/${{ steps.latest_release.outputs.latest_release }}
+          labels: |
+            auto-pr-bump-version

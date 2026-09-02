@@ -1,0 +1,17 @@
+apiVersion: dwpk.devops-ia.io/v1alpha1
+kind: UserSpace
+metadata:
+  labels:
+    app.kubernetes.io/name: dwpk
+  name: alice
+spec:
+  owner: "alice@example.com"
+  quota:
+    cpu: "8"
+    memory: 32Gi
+    storage: 100Gi
+    workspaces: 1
+  # Isolated is the default posture: the user's namespace can reach the
+  # internet and cluster DNS but not other namespaces. Good enough for
+  # most workspaces that only need to pull packages and push to a remote git host.
+  networkPolicy: Isolated

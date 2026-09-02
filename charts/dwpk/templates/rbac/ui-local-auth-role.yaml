@@ -1,0 +1,44 @@
+{{- if and (or (not (hasKey .Values.ui "enabled")) (.Values.ui.enabled)) .Values.ui.localAuth.enabled }}
+{{- $localAuthNamespace := .Values.ui.localAuth.namespace | default .Release.Namespace }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "dwpk.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  name: {{ include "dwpk.resourceName" (dict "suffix" "ui-local-auth-role" "context" $) }}
+  namespace: {{ $localAuthNamespace }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "dwpk.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  name: {{ include "dwpk.resourceName" (dict "suffix" "ui-local-auth-rolebinding" "context" $) }}
+  namespace: {{ $localAuthNamespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "dwpk.resourceName" (dict "suffix" "ui-local-auth-role" "context" $) }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "dwpk.uiServiceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}

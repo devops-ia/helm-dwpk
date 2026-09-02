@@ -1,0 +1,32 @@
+{{- if or (not (hasKey .Values.gateway "enabled")) (.Values.gateway.enabled) }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "dwpk.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    control-plane: gateway
+    {{- with .Values.gateway.service.labels }}
+    {{- with omit . "app.kubernetes.io/managed-by" "app.kubernetes.io/name" "helm.sh/chart" "app.kubernetes.io/instance" "control-plane" }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- end }}
+  name: {{ include "dwpk.resourceName" (dict "suffix" "gateway-service" "context" $) }}
+  namespace: {{ .Release.Namespace }}
+  {{- with .Values.gateway.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ports:
+  - name: ssh
+    port: {{ .Values.gateway.service.port }}
+    protocol: TCP
+    targetPort: ssh
+  selector:
+    app.kubernetes.io/name: {{ include "dwpk.name" . }}
+    control-plane: gateway
+  type: {{ .Values.gateway.service.type }}
+{{- end }}

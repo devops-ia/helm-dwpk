@@ -1,0 +1,21 @@
+# Track the manager image published by devops-ia/dwpk and keep the chart's
+# appVersion on its latest release. The three component images (dwpk,
+# dwpk-gateway, dwpk-ui) are tagged together by one release workflow, so the
+# manager's tag stands for all three and this one source covers the chart.
+sources:
+  dwpk:
+    kind: dockerimage
+    spec:
+      image: ghcr.io/devops-ia/dwpk
+      architecture: linux/amd64
+      versionFilter:
+        kind: semver
+conditions: {}
+targets:
+  dwpk:
+    name: bump chart appversion
+    kind: yaml
+    spec:
+      file: charts/dwpk/Chart.yaml
+      key: $.appVersion
+    sourceid: dwpk

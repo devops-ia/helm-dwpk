@@ -1,0 +1,67 @@
+{{- if .Values.webhook.enabled }}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    {{- if .Values.certManager.enabled }}
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "dwpk.resourceName" (dict "suffix" "serving-cert" "context" $) }}
+    {{- end }}
+  name: {{ include "dwpk.resourceName" (dict "suffix" "validating-webhook-configuration" "context" $) }}
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ include "dwpk.resourceName" (dict "suffix" "webhook-service" "context" $) }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-dwpk-devops-ia-io-v1alpha1-workspace
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: vworkspace-v1alpha1.dwpk.devops-ia.io
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - dwpk-system
+      - kube-system
+  rules:
+  - apiGroups:
+    - dwpk.devops-ia.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - workspaces
+  sideEffects: None
+  timeoutSeconds: 5
+{{/*
+UserSpace is cluster-scoped, so namespaceSelector does not apply - there is no
+namespace to exclude. The rule this enforces is that only an administrator may
+grant the administrator role, which is why it must not be skippable.
+*/}}
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ include "dwpk.resourceName" (dict "suffix" "webhook-service" "context" $) }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-dwpk-devops-ia-io-v1alpha1-userspace
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: vuserspace-v1alpha1.dwpk.devops-ia.io
+  rules:
+  - apiGroups:
+    - dwpk.devops-ia.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - userspaces
+  sideEffects: None
+  timeoutSeconds: 5
+{{- end }}

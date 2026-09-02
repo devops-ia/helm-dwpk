@@ -1,0 +1,90 @@
+# Example values for a production install with all five OAuth2 providers
+# wired up. Use with:
+#   helm install dwpk dist/chart -n dwpk-system --create-namespace -f examples/helm-values/values-production.yaml
+#
+# Create the client-secret Secret first, one key per provider you enable:
+#   kubectl create secret generic dwpk-oauth -n dwpk-system \
+#     --from-literal=entra-id-client-secret=<...> \
+#     --from-literal=google-client-secret=<...> \
+#     --from-literal=gitlab-client-secret=<...> \
+#     --from-literal=keycloak-client-secret=<...> \
+#     --from-literal=github-client-secret=<...>
+#
+# Leave out whichever providers you are not enabling; an empty clientID
+# leaves that provider disabled on the login screen.
+
+manager:
+  replicas: 2
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: "1", memory: 256Mi }
+
+gateway:
+  enabled: true
+  replicas: 3
+  service:
+    type: LoadBalancer
+    port: 22
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: "1", memory: 512Mi }
+
+ui:
+  enabled: true
+  replicas: 2
+  gatewayHost: dwpk.example.com
+  baseURL: "https://dwpk.example.com"
+  cookieSecure: true
+  sessionTTL: 30m
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: "1", memory: 512Mi }
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-production
+    hosts:
+      - host: dwpk.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: dwpk-ui-tls
+        hosts:
+          - dwpk.example.com
+  oauth:
+    existingSecret: dwpk-oauth
+    entraID:
+      clientID: "00000000-0000-0000-0000-000000000000"
+      issuerURL: "https://login.microsoftonline.com/<tenant-id>/v2.0"
+      redirectURL: "https://dwpk.example.com/auth/entra-id/callback"
+      clientSecretKey: entra-id-client-secret
+    google:
+      clientID: "000000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
+      issuerURL: "https://accounts.google.com"
+      redirectURL: "https://dwpk.example.com/auth/google/callback"
+      clientSecretKey: google-client-secret
+    gitLab:
+      clientID: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      issuerURL: "https://gitlab.com"
+      redirectURL: "https://dwpk.example.com/auth/gitlab/callback"
+      clientSecretKey: gitlab-client-secret
+    keycloak:
+      clientID: "dwpk"
+      issuerURL: "https://keycloak.example.com/realms/dwpk"
+      redirectURL: "https://dwpk.example.com/auth/keycloak/callback"
+      clientSecretKey: keycloak-client-secret
+    gitHub:
+      clientID: "Iv1.xxxxxxxxxxxxxxxx"
+      redirectURL: "https://dwpk.example.com/auth/github/callback"
+      clientSecretKey: github-client-secret
+
+certManager:
+  enabled: true
+
+prometheus:
+  enabled: true
+
+networkPolicy:
+  enabled: true

@@ -1,0 +1,14 @@
+# Values used by chart-testing (`ct install`) in CI, see .github/ct.yaml.
+# The ephemeral kind cluster ct spins up has no cert-manager CRDs, so the
+# chart's cert-manager/webhook resources (which need those CRDs to exist
+# before `helm install` can even render them) are turned off here. This
+# only affects the CI smoke test: the real deployment guide in
+# docs/INSTALLATION.md installs cert-manager first and leaves both on.
+certManager:
+  enabled: false
+
+webhook:
+  enabled: false
+
+prometheus:
+  enabled: false

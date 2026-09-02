@@ -1,0 +1,306 @@
+{{- if or (not (hasKey .Values.ui "enabled")) (.Values.ui.enabled) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "dwpk.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    control-plane: ui
+    {{- with .Values.ui.labels }}
+    {{- with omit . "app.kubernetes.io/managed-by" "app.kubernetes.io/name" "helm.sh/chart" "app.kubernetes.io/instance" "control-plane" }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- end }}
+  name: {{ include "dwpk.resourceName" (dict "suffix" "ui" "context" $) }}
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.ui.annotations }}
+  annotations:
+    {{- toYaml .Values.ui.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ui.strategy }}
+  strategy: {{ toYaml . | nindent 6 }}
+  {{- end }}
+  replicas: {{ .Values.ui.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "dwpk.name" . }}
+      control-plane: ui
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: ui
+        {{- with .Values.ui.pod }}
+        {{- with .annotations }}
+        {{- with omit . "kubectl.kubernetes.io/default-container" }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+      labels:
+        app.kubernetes.io/name: {{ include "dwpk.name" . }}
+        helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        control-plane: ui
+        {{- with .Values.ui.pod }}
+        {{- with .labels }}
+        {{- with omit . "app.kubernetes.io/name" "helm.sh/chart" "app.kubernetes.io/instance" "app.kubernetes.io/managed-by" "control-plane" }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+    spec:
+      {{- with .Values.ui.topologySpreadConstraints }}
+      topologySpreadConstraints: {{ toYaml . | nindent 10 }}
+      {{- end }}
+      {{- with .Values.ui.priorityClassName }}
+      priorityClassName: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.ui.tolerations }}
+      tolerations: {{ toYaml . | nindent 10 }}
+      {{- end }}
+      {{- with .Values.ui.affinity }}
+      affinity: {{ toYaml . | nindent 10 }}
+      {{- end }}
+      {{- with .Values.ui.nodeSelector }}
+      nodeSelector: {{ toYaml . | nindent 10 }}
+      {{- end }}
+      {{- with (include "dwpk.imagePullSecrets" (dict "pullSecrets" .Values.ui.imagePullSecrets "context" $)) }}
+      {{- . | nindent 6 }}
+      {{- end }}
+      {{- with .Values.ui.dnsPolicy }}
+      dnsPolicy: {{ . }}
+      {{- end }}
+      {{- with .Values.ui.dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ui.initContainers }}
+      initContainers:
+        {{- tpl (toYaml .) $ | nindent 8 }}
+      {{- end }}
+      containers:
+      - command:
+        - /ui
+        image: {{ include "dwpk.image" (dict "image" .Values.ui.image "context" $) | quote }}
+        {{- with .Values.ui.image.pullPolicy }}
+        imagePullPolicy: {{ . }}
+        {{- end }}
+        env:
+        - name: DWPK__UI_LISTEN_ADDRESS
+          value: {{ .Values.ui.listenAddress | quote }}
+        - name: DWPK__UI_SESSION_TTL
+          value: {{ .Values.ui.sessionTTL | quote }}
+        - name: DWPK__UI_COOKIE_SECURE
+          value: {{ ternary "true" "false" .Values.ui.cookieSecure | quote }}
+        - name: DWPK__UI_LOG_LEVEL
+          value: {{ .Values.ui.logLevel | quote }}
+        {{- with .Values.ui.basePath }}
+        - name: DWPK__UI_BASE_PATH
+          value: {{ . | quote }}
+        {{- end }}
+        - name: DWPK__UI_TOKEN_NAMESPACE
+          value: {{ .Values.ui.tokenNamespace | default .Release.Namespace | quote }}
+        {{- /*
+          Same Secret templates/manager/git-ssh-encryption-key-secret.yaml
+          generates, in this release's own namespace - the manager decrypts
+          with it on reconcile, the UI encrypts with it on upload.
+        */}}
+        - name: DWPK__UI_GIT_SSH_ENCRYPTION_KEY_NAMESPACE
+          value: {{ .Release.Namespace | quote }}
+        - name: DWPK__UI_LOCAL_AUTH_ENABLED
+          value: {{ ternary "true" "false" .Values.ui.localAuth.enabled | quote }}
+        {{- if .Values.ui.localAuth.enabled }}
+        - name: DWPK__UI_LOCAL_AUTH_NAMESPACE
+          value: {{ .Values.ui.localAuth.namespace | default .Release.Namespace | quote }}
+        {{- end }}
+        {{- with .Values.ui.baseURL }}
+        - name: DWPK__UI_BASE_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.gatewayHost }}
+        - name: DWPK__UI_GATEWAY_HOST
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.kubeconfig }}
+        - name: DWPK__UI_KUBECONFIG
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.entraID.clientID }}
+        - name: DWPK__UI_PROVIDER_ENTRA_ID_CLIENT_ID
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.entraID.issuerURL }}
+        - name: DWPK__UI_PROVIDER_ENTRA_ID_ISSUER_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.entraID.redirectURL }}
+        - name: DWPK__UI_PROVIDER_ENTRA_ID_REDIRECT_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- if and .Values.ui.oauth.existingSecret .Values.ui.oauth.entraID.clientSecretKey .Values.ui.oauth.entraID.clientID }}
+        - name: DWPK__UI_PROVIDER_ENTRA_ID_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: {{ .Values.ui.oauth.entraID.clientSecretKey | quote }}
+              name: {{ .Values.ui.oauth.existingSecret }}
+        {{- end }}
+        {{- with .Values.ui.oauth.entraID.adminGroups }}
+        - name: DWPK__UI_PROVIDER_ENTRA_ID_ADMIN_GROUPS
+          value: {{ join "," . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.entraID.userGroups }}
+        - name: DWPK__UI_PROVIDER_ENTRA_ID_USER_GROUPS
+          value: {{ join "," . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.google.clientID }}
+        - name: DWPK__UI_PROVIDER_GOOGLE_CLIENT_ID
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.google.issuerURL }}
+        - name: DWPK__UI_PROVIDER_GOOGLE_ISSUER_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.google.redirectURL }}
+        - name: DWPK__UI_PROVIDER_GOOGLE_REDIRECT_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- if and .Values.ui.oauth.existingSecret .Values.ui.oauth.google.clientSecretKey .Values.ui.oauth.google.clientID }}
+        - name: DWPK__UI_PROVIDER_GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: {{ .Values.ui.oauth.google.clientSecretKey | quote }}
+              name: {{ .Values.ui.oauth.existingSecret }}
+        {{- end }}
+        {{- with .Values.ui.oauth.google.adminGroups }}
+        - name: DWPK__UI_PROVIDER_GOOGLE_ADMIN_GROUPS
+          value: {{ join "," . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.google.userGroups }}
+        - name: DWPK__UI_PROVIDER_GOOGLE_USER_GROUPS
+          value: {{ join "," . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.gitLab.clientID }}
+        - name: DWPK__UI_PROVIDER_GITLAB_CLIENT_ID
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.gitLab.issuerURL }}
+        - name: DWPK__UI_PROVIDER_GITLAB_ISSUER_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.gitLab.redirectURL }}
+        - name: DWPK__UI_PROVIDER_GITLAB_REDIRECT_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- if and .Values.ui.oauth.existingSecret .Values.ui.oauth.gitLab.clientSecretKey .Values.ui.oauth.gitLab.clientID }}
+        - name: DWPK__UI_PROVIDER_GITLAB_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: {{ .Values.ui.oauth.gitLab.clientSecretKey | quote }}
+              name: {{ .Values.ui.oauth.existingSecret }}
+        {{- end }}
+        {{- with .Values.ui.oauth.gitLab.adminGroups }}
+        - name: DWPK__UI_PROVIDER_GITLAB_ADMIN_GROUPS
+          value: {{ join "," . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.gitLab.userGroups }}
+        - name: DWPK__UI_PROVIDER_GITLAB_USER_GROUPS
+          value: {{ join "," . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.keycloak.clientID }}
+        - name: DWPK__UI_PROVIDER_KEYCLOAK_CLIENT_ID
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.keycloak.issuerURL }}
+        - name: DWPK__UI_PROVIDER_KEYCLOAK_ISSUER_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.keycloak.redirectURL }}
+        - name: DWPK__UI_PROVIDER_KEYCLOAK_REDIRECT_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- if and .Values.ui.oauth.existingSecret .Values.ui.oauth.keycloak.clientSecretKey .Values.ui.oauth.keycloak.clientID }}
+        - name: DWPK__UI_PROVIDER_KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: {{ .Values.ui.oauth.keycloak.clientSecretKey | quote }}
+              name: {{ .Values.ui.oauth.existingSecret }}
+        {{- end }}
+        {{- with .Values.ui.oauth.keycloak.adminGroups }}
+        - name: DWPK__UI_PROVIDER_KEYCLOAK_ADMIN_GROUPS
+          value: {{ join "," . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.keycloak.userGroups }}
+        - name: DWPK__UI_PROVIDER_KEYCLOAK_USER_GROUPS
+          value: {{ join "," . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.gitHub.clientID }}
+        - name: DWPK__UI_PROVIDER_GITHUB_CLIENT_ID
+          value: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.ui.oauth.gitHub.redirectURL }}
+        - name: DWPK__UI_PROVIDER_GITHUB_REDIRECT_URL
+          value: {{ . | quote }}
+        {{- end }}
+        {{- if and .Values.ui.oauth.existingSecret .Values.ui.oauth.gitHub.clientSecretKey .Values.ui.oauth.gitHub.clientID }}
+        - name: DWPK__UI_PROVIDER_GITHUB_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: {{ .Values.ui.oauth.gitHub.clientSecretKey | quote }}
+              name: {{ .Values.ui.oauth.existingSecret }}
+        {{- end }}
+        {{- with (include "dwpk.env" (dict "component" .Values.ui)) }}
+        {{- . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.ui.envFromFiles }}
+        envFrom:
+          {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
+        {{- $loginProbe := dict "httpGet" (dict "path" "/login" "port" "http") }}
+        {{- with (include "dwpk.probe" (dict "probe" .Values.ui.livenessProbe "custom" .Values.ui.livenessProbeCustom "handler" $loginProbe)) }}
+        livenessProbe:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with (include "dwpk.probe" (dict "probe" .Values.ui.startupProbe "custom" .Values.ui.startupProbeCustom "handler" $loginProbe)) }}
+        startupProbe:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.ui.lifecycle }}
+        lifecycle:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        name: ui
+        ports:
+        - containerPort: {{ include "dwpk.listenPort" .Values.ui.listenAddress }}
+          name: http
+          protocol: TCP
+        {{- with (include "dwpk.probe" (dict "probe" .Values.ui.readinessProbe "custom" .Values.ui.readinessProbeCustom "handler" $loginProbe)) }}
+        readinessProbe:
+          {{- . | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- if .Values.ui.resources }}
+          {{- toYaml .Values.ui.resources | nindent 10 }}
+          {{- else }}
+          {}
+          {{- end }}
+        securityContext:
+          {{- if .Values.ui.securityContext }}
+          {{- toYaml .Values.ui.securityContext | nindent 10 }}
+          {{- else }}
+          {}
+          {{- end }}
+      securityContext:
+        {{- if .Values.ui.podSecurityContext }}
+        {{- toYaml .Values.ui.podSecurityContext | nindent 8 }}
+        {{- else }}
+        {}
+        {{- end }}
+      serviceAccountName: {{ include "dwpk.uiServiceAccountName" . }}
+      {{- if and (hasKey .Values.ui "terminationGracePeriodSeconds") (ne .Values.ui.terminationGracePeriodSeconds nil) }}
+      terminationGracePeriodSeconds: {{ .Values.ui.terminationGracePeriodSeconds }}
+      {{- end }}
+{{- end }}

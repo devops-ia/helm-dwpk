@@ -1,0 +1,40 @@
+{{- if or (not (hasKey .Values.gateway "enabled")) (.Values.gateway.enabled) }}
+{{- if .Values.rbac.namespaced }}
+{{- fail "gateway requires cluster-scoped RBAC; set rbac.namespaced=false" }}
+{{- end }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "dwpk.resourceName" (dict "suffix" "gateway-role" "context" $) }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods/exec
+  - pods/portforward
+  verbs:
+  - create
+- apiGroups:
+  - dwpk.devops-ia.io
+  resources:
+  - userspaces
+  - workspaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dwpk.devops-ia.io
+  resources:
+  - workspaces/status
+  verbs:
+  - patch
+{{- end }}

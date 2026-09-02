@@ -1,0 +1,43 @@
+{{- if and (or (not (hasKey .Values.ui "enabled")) (.Values.ui.enabled)) .Values.ui.gateway.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "dwpk.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    control-plane: ui
+  name: {{ include "dwpk.resourceName" (dict "suffix" "ui-httproute" "context" $) }}
+  namespace: {{ .Release.Namespace }}
+  {{- with .Values.ui.gateway.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    {{- if .Values.ui.gateway.create }}
+    - name: {{ include "dwpk.resourceName" (dict "suffix" "ui-gateway" "context" $) }}
+      namespace: {{ .Release.Namespace }}
+    {{- else }}
+    {{- toYaml .Values.ui.gateway.parentRefs | nindent 4 }}
+    {{- end }}
+  {{- with .Values.ui.gateway.hostnames }}
+  hostnames:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.ui.gateway.rules }}
+    - {{- with .matches }}
+      matches:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .filters }}
+      filters:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      backendRefs:
+        - name: {{ include "dwpk.resourceName" (dict "suffix" "ui-service" "context" $) }}
+          port: {{ $.Values.ui.service.port }}
+    {{- end }}
+{{- end }}

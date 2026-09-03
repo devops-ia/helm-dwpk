@@ -1,6 +1,6 @@
-# dwpk Helm Chart
+# DWPK Helm Chart
 
-[dwpk](https://github.com/devops-ia/dwpk) is a development workspace platform for Kubernetes: a Go operator, an SSH gateway, and a marketplace web UI, deployed together by this chart.
+Development Workspace Platform for Kubernetes. Give every developer on your team a real, persistent, browser and SSH-reachable dev environment running on your own cluster, provisioned from a catalog you control.
 
 ## Usage
 
@@ -21,7 +21,7 @@ helm repo update
 #### Install Helm chart
 
 ```console
-helm install [RELEASE_NAME] dwpk/dwpk
+helm install [RELEASE_NAME] dwpk
 ```
 
 This install all the Kubernetes components associated with the chart and creates the release.
@@ -35,9 +35,9 @@ Charts are also available in OCI format. The list of available charts can be fou
 #### Install Helm chart
 
 ```console
-helm install [RELEASE_NAME] oci://ghcr.io/devops-ia/helm-dwpk/dwpk --version=[version]
+helm install [RELEASE_NAME] oci://ghcr.io/devops-ia/helm-dwpk --version=[version]
 ```
 
-## dwpk chart
+## DWPK chart
 
-Can be found in [dwpk chart](charts/dwpk).
+Can be found in [dwpk chart](https://github.com/devops-ia/helm-dwpk/tree/main/charts/dwpk).

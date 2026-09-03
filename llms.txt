@@ -1,0 +1,17 @@
+# helm-dwpk
+
+> Helm chart for dwpk (development workspace platform for Kubernetes): a Go
+> operator (manager), an SSH gateway, and a marketplace web UI, deployed
+> together as one release. CRDs: UserSpace, Workspace, WorkspaceImage.
+
+## Docs
+
+- [README](https://github.com/devops-ia/helm-dwpk/blob/main/README.md): repo overview, repository/OCI install instructions
+- [Chart README](https://github.com/devops-ia/helm-dwpk/blob/main/charts/dwpk/README.md): full values reference, quick start, exposing the UI, admin bootstrap
+- [Examples README](https://github.com/devops-ia/helm-dwpk/blob/main/charts/dwpk/examples/README.md): example CRs and values files
+- [CONTRIBUTING](https://github.com/devops-ia/helm-dwpk/blob/main/CONTRIBUTING.md): how to contribute
+- [TESTING](https://github.com/devops-ia/helm-dwpk/blob/main/TESTING.md): how to test the chart
+
+## Optional
+
+- [LICENSE](https://github.com/devops-ia/helm-dwpk/blob/main/LICENSE): MIT

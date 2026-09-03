@@ -1,15 +1,92 @@
-Thank you for installing {{ .Chart.Name }}.
+Thank you for installing {{ .Chart.Name }} {{ .Chart.Version }} (app version {{ .Chart.AppVersion }}).
 
-Your release is named {{ .Release.Name }}.
+Release "{{ .Release.Name }}" has been deployed to namespace {{ .Release.Namespace }}.
 
-The controller and CRDs have been installed in namespace {{ .Release.Namespace }}.
+dwpk is a development workspace platform for Kubernetes: a controller manager
+reconciling UserSpace/Workspace/WorkspaceImage, an SSH gateway, and a
+marketplace web UI, installed together by this release.
 
-To verify the installation:
+Components in this release:
+{{- if or (not (hasKey .Values.manager "enabled")) .Values.manager.enabled }}
+  - manager  ({{ .Values.manager.replicas }} replica(s)): CRD controller and admission webhooks
+{{- else }}
+  - manager  disabled
+{{- end }}
+{{- if or (not (hasKey .Values.gateway "enabled")) .Values.gateway.enabled }}
+  - gateway  ({{ .Values.gateway.replicas }} replica(s)): SSH endpoint into Workspace pods
+{{- else }}
+  - gateway  disabled
+{{- end }}
+{{- if or (not (hasKey .Values.ui "enabled")) .Values.ui.enabled }}
+  - ui       ({{ .Values.ui.replicas }} replica(s)): marketplace web UI
+{{- else }}
+  - ui       disabled
+{{- end }}
 
-  kubectl get pods -n {{ .Release.Namespace }}
-  kubectl get customresourcedefinitions
+To check the rollout:
 
-To learn more about the release, try:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- if or (not (hasKey .Values.crd "enabled")) .Values.crd.enabled }}
+  kubectl get crds -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- end }}
+{{- if or (not (hasKey .Values.webhook "enabled")) .Values.webhook.enabled }}
+
+Admission webhooks are enabled, backed by
+{{- if or (not (hasKey .Values.certManager "enabled")) .Values.certManager.enabled }} cert-manager-issued certificates. New webhook pods may briefly fail readiness until the certificate is issued.
+{{- else }} certificates you must supply yourself (certManager.enabled=false).
+{{- end }}
+{{- end }}
+{{- if or (not (hasKey .Values.gateway "enabled")) .Values.gateway.enabled }}
+
+Connect over SSH, as <workspace>@<address>:{{ .Values.gateway.service.port }}
+{{- if eq .Values.gateway.service.type "LoadBalancer" }}
+
+  Wait for an external address, then connect to it:
+
+    kubectl get svc -n {{ .Release.Namespace }} {{ include "dwpk.resourceName" (dict "suffix" "gateway-service" "context" $) }}
+{{- else }}
+
+  gateway.service.type is {{ .Values.gateway.service.type }}: expose it yourself
+  (LoadBalancer, a NodePort, or port-forward) to reach it from outside the cluster.
+{{- end }}
+{{- end }}
+{{- if or (not (hasKey .Values.ui "enabled")) .Values.ui.enabled }}
+
+Reach the UI:
+{{- if .Values.ui.ingress.enabled }}
+{{- range .Values.ui.ingress.hosts }}
+{{- with .host }}
+
+  http://{{ . }}
+{{- end }}
+{{- end }}
+{{- else if .Values.ui.gateway.enabled }}
+
+  Through the Gateway API route attached to
+{{- if .Values.ui.gateway.create }} the Gateway this release creates.
+{{- else }} an existing Gateway (see ui.gateway.parentRefs).
+{{- end }}
+{{- else }}
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "dwpk.resourceName" (dict "suffix" "ui-service" "context" $) }} 8080:{{ .Values.ui.service.port }}
+
+  then open http://localhost:8080
+{{- end }}
+{{- if .Values.ui.localAuth.enabled }}
+
+  Local username/password login is enabled (ui.localAuth), alongside any
+  configured OAuth2 providers (ui.oauth).
+{{- end }}
+{{- end }}
+{{- if or (not (hasKey .Values.adminBootstrap "enabled")) .Values.adminBootstrap.enabled }}
+
+An initial admin login was bootstrapped for {{ .Values.adminBootstrap.email }}.
+Read the generated password once from the dwpk-admin-bootstrap Secret:
+
+  kubectl get secret -n {{ .Release.Namespace }} dwpk-admin-bootstrap -o jsonpath='{.data.password}' | base64 -d; echo
+{{- end }}
+
+To learn more about this release, try:
 
   $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
   $ helm get all {{ .Release.Name }} -n {{ .Release.Namespace }}

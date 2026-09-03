@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: helmlint
         args:
-          - charts/opencti
+          - charts/dwpk
       - id: shellcheck
 
   - repo: https://github.com/norwoodj/helm-docs
@@ -34,7 +34,7 @@ repos:
           - --document-dependency-values
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.37.3
+    rev: 0.38.0
     hooks:
       - id: check-jsonschema
         name: "Check values.schema.json"
@@ -45,14 +45,14 @@ repos:
     hooks:
       - id: helm-check-version
         name: Check Helm Chart Version
-        entry: bash -c 'if ! grep -q "version:" charts/opencti/Chart.yaml; then echo "Version field missing in Chart.yaml"; exit 1; fi'
+        entry: bash -c 'if ! grep -q "version:" charts/dwpk/Chart.yaml; then echo "Version field missing in Chart.yaml"; exit 1; fi'
         language: system
-        files: ^charts/opencti/Chart\.yaml$
+        files: ^charts/dwpk/Chart\.yaml$
         pass_filenames: false
 
       - id: helm-check-values
         name: Check values.yaml against schema
-        entry: bash -c 'if [ -f values.schema.json ]; then if ! helm template charts/opencti --validate --values charts/opencti/values.yaml > /dev/null; then exit 1; fi; fi'
+        entry: bash -c 'if [ -f values.schema.json ]; then if ! helm template charts/dwpk --validate --values charts/dwpk/values.yaml > /dev/null; then exit 1; fi; fi'
         language: system
-        files: ^charts/opencti/values\.yaml$
+        files: ^charts/dwpk/values\.yaml$
         pass_filenames: false

@@ -1,6 +1,6 @@
-# Testing OpenCTI Helm Chart
+# Testing dwpk Helm Chart
 
-This document provides guidelines for testing the OpenCTI Helm chart. Follow these instructions to ensure the chart works as expected before deployment to production.
+This document provides guidelines for testing the dwpk Helm chart. Follow these instructions to ensure the chart works as expected before deployment to production.
 
 ## Steps
 
@@ -8,22 +8,22 @@ This document provides guidelines for testing the OpenCTI Helm chart. Follow the
 
 ```bash
 # Run helm lint to check for any syntax issues
-helm lint charts/opencti
+helm lint charts/dwpk
 ```
 
 ### 2. Template Testing
 
 ```bash
 # Generate and verify the template output
-helm template opencti charts/opencti --debug
+helm template dwpk charts/dwpk --debug
 ```
 
 ### 3. Local installation testing
 
 ```bash
 # Install the chart in a test namespace
-kubectl create namespace opencti-test
-helm install opencti-test charts/opencti --namespace opencti-test
+kubectl create namespace dwpk-test
+helm install dwpk-test charts/dwpk --namespace dwpk-test
 ```
 
 ### 4. Verification steps
@@ -31,58 +31,54 @@ helm install opencti-test charts/opencti --namespace opencti-test
 1. Check all pods are running:
 
 ```bash
-kubectl get pods -n opencti-test
+kubectl get pods -n dwpk-test
 ```
 
 2. Verify services are exposed:
 
 ```bash
-kubectl get svc -n opencti-test
+kubectl get svc -n dwpk-test
 ```
 
-3. Check platform accessibility:
+3. Check UI accessibility:
 
 ```bash
-kubectl port-forward svc/opencti-test 8080:8080 -n opencti-test
+kubectl port-forward svc/dwpk-test-ui 8080:8080 -n dwpk-test
 ```
 
 4. Validate component health:
 
-- OpenCTI platform UI accessibility
-- ElasticSearch connection
-- RabbitMQ status
-- MinIO/S3 connectivity
-- Redis cluster status
+- manager (controller and webhooks) is ready
+- gateway accepts SSH connections
+- ui is reachable and can list images
 
 ### 5. Functional testing
 
-1. **Platform Login**
-   - Verify default admin credentials work
-   - Test SSO if configured
+1. **UI Login**
+   - Verify local auth or configured OAuth2 provider works
 
-2. **Data Operations**
-   - Create a test entity
-   - Import a sample STIX bundle
-   - Verify connectors are working
+2. **Workspace Operations**
+   - Create a `WorkspaceImage`
+   - Create a `UserSpace` and a `Workspace`
+   - Connect via `ssh <workspace>@<host>`
 
 3. **Integration Testing**
-   - Test configured connectors
-   - Verify data ingestion
-   - Check export functionality
+   - Verify webhook admission (defaulting/validation/conversion)
+   - Check cert-manager issued webhook certificate
 
 ### 6. Upgrade testing
 
 ```bash
 # Test upgrade from previous version
-helm upgrade opencti-test charts/opencti --namespace opencti-test
+helm upgrade dwpk-test charts/dwpk --namespace dwpk-test
 ```
 
 ### 7. Clean-up
 
 ```bash
 # Remove test deployment
-helm uninstall opencti-test --namespace opencti-test
-kubectl delete namespace opencti-test
+helm uninstall dwpk-test --namespace dwpk-test
+kubectl delete namespace dwpk-test
 ```
 
 ## Automated testing

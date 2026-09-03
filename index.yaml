@@ -1,0 +1,32 @@
+apiVersion: v1
+entries:
+  dwpk:
+  - annotations:
+      kubebuilder.io/generated-by: kubebuilder
+    apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-09-03T17:34:11.846876274Z"
+    description: A Helm chart to deploy dwpk, a development workspace platform for
+      Kubernetes
+    digest: d75e6f81cd60941a6246b633300778b84470b2445e3baf899ccb167a43bf7913
+    home: https://github.com/devops-ia/dwpk
+    keywords:
+    - kubernetes
+    - operator
+    - development
+    - workspace
+    - ssh
+    - devcontainer
+    maintainers:
+    - email: hello@ialejandro.rocks
+      name: ialejandro
+      url: https://ialejandro.rocks
+    name: dwpk
+    sources:
+    - https://github.com/devops-ia/helm-dwpk
+    - https://github.com/devops-ia/dwpk
+    type: application
+    urls:
+    - https://github.com/devops-ia/helm-dwpk/releases/download/v1.0.0/dwpk-1.0.0.tgz
+    version: 1.0.0
+generated: "2026-09-03T17:34:11.846882575Z"

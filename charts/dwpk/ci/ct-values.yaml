@@ -12,3 +12,9 @@ webhook:
 
 prometheus:
   enabled: false
+
+# ct installs the chart more than once (upgrade test, then install test) in
+# different namespaces. Kept CRDs survive the uninstall still owned by the
+# previous release, so the next install fails on ownership metadata.
+crd:
+  keep: false

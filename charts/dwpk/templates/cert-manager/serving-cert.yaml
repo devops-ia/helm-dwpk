@@ -17,4 +17,27 @@ spec:
     kind: Issuer
     name: {{ include "dwpk.resourceName" (dict "suffix" "selfsigned-issuer" "context" $) }}
   secretName: webhook-server-cert
+{{- else }}
+{{- /*
+  The manager always starts its webhook server and exits without a serving
+  cert, so without cert-manager the chart ships a self-signed one.
+  Regenerated on every upgrade and no caBundle is injected into the
+  webhook configurations; use cert-manager when webhook.enabled is true.
+*/}}
+{{- $svc := include "dwpk.resourceName" (dict "suffix" "webhook-service" "context" $) }}
+{{- $cert := genSelfSignedCert (printf "%s.%s.svc" $svc .Release.Namespace) nil (list (printf "%s.%s.svc" $svc .Release.Namespace) (printf "%s.%s.svc.cluster.local" $svc .Release.Namespace)) 3650 }}
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "dwpk.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  name: webhook-server-cert
+  namespace: {{ .Release.Namespace }}
+data:
+  tls.crt: {{ $cert.Cert | b64enc }}
+  tls.key: {{ $cert.Key | b64enc }}
 {{- end }}

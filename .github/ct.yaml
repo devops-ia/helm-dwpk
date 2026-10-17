@@ -8,3 +8,7 @@ upgrade: true
 validate-chart-schema: true
 validate-maintainers: false
 validate-yaml: true
+# The dwpk manager holds its leader-election Lease in dwpk-system (hardcoded),
+# so CI installs there instead of in a random namespace.
+namespace: dwpk-system
+release-label: app.kubernetes.io/instance

@@ -4,7 +4,7 @@ check-version-increment: false
 debug: false
 remote: origin
 target-branch: main
-upgrade: false
+upgrade: true
 validate-chart-schema: true
 validate-maintainers: false
 validate-yaml: true

@@ -18,3 +18,9 @@ prometheus:
 # previous release, so the next install fails on ownership metadata.
 crd:
   keep: false
+
+# CI only: leader election needs a Lease in a hardcoded namespace, and ct installs
+# into random ones. A single replica does not need it.
+manager:
+  replicas: 1
+  args: []
